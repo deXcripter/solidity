@@ -9,13 +9,14 @@ contract SimpleStorage {
         string name;
        }
 
-       Person public john = Person(23, "Johnpaul");
+      // this is a dynamic array
+       Person[] public listOfPeople;
 
-       function store(uint256 _favoriteNumber) public {
-            favoriteNumber = _favoriteNumber;
-         }
+       // this is a static array but capped at size 3
+      //  Person[3] public listOfPeople;
 
-        function retrieve() public view returns (uint256) {
-          return favoriteNumber;
-        }
+       function addPerson(string memory _name, uint256 _favoriteNumber) public {
+            Person memory newPerson = Person(_favoriteNumber, _name);
+            listOfPeople.push(newPerson);
+       }
 }
