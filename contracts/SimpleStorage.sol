@@ -11,9 +11,12 @@ contract SimpleStorage {
 
     Person[] public listOfregisteredPeople;
 
+    mapping(string => Person) public people;
+
 
     function addPerson (string memory name, int number, bool male) public {
         Person memory newPerson = Person({name: name, age: number, male: male});
-        listOfregisteredPeople.push(newPerson);        
+        listOfregisteredPeople.push(newPerson);   
+        people[name] = newPerson;     
     }
 }
