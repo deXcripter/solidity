@@ -18,5 +18,8 @@ contract FundMeTest is Test {
     assertEq(fundMe.MINIMUM_USD(), 5e18);
   }
 
+  function testConfirmOwnerIsMsgSender() public {
+    assertEq(fundMe.i_owner(), address(this));
+  }
 
 }
