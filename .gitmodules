@@ -10,3 +10,6 @@
 [submodule "intro-to-foundry/lib/forge-std"]
 	path = intro-to-foundry/lib/forge-std
 	url = https://github.com/foundry-rs/forge-std
+[submodule "fund-me/lib/forge-std"]
+	path = fund-me/lib/forge-std
+	url = https://github.com/foundry-rs/forge-std
