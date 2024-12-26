@@ -1,7 +1,7 @@
 // I'm a comment!
 // SPDX-License-Identifier: MIT
 
-pragma solidity 0.8.19;
+pragma solidity >=0.8.0 <0.9.0;
 
 // pragma solidity ^0.8.0;
 // pragma solidity >=0.8.0 <0.9.0;
@@ -13,7 +13,7 @@ contract SimpleStorage {
         uint256 favoriteNumber;
         string name;
     }
-    // uint256[] public anArray;
+    // uint256[] public an Array;
     Person[] public listOfPeople;
 
     mapping(string => uint256) public nameToFavoriteNumber;
@@ -36,4 +36,8 @@ contract SimpleStorage2 {}
 
 contract SimpleStorage3 {}
 
-contract SimpleStorage4 {}
+contract SimpleStorage4 {
+
+}
+
+// 0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266
