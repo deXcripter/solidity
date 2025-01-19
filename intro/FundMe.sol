@@ -6,6 +6,11 @@ pragma solidity ^0.8.18;
 
 contract FundMe {
     using PriceConverter for uint256;
+    address public owner;
+
+    constructor() {
+        owner = msg.sender;
+    }
 
     uint public minimumUsd = 5 * 1e18;
     address[] public funders;
@@ -25,6 +30,8 @@ contract FundMe {
     }
 
     function withdraw() public {
+        require(msg.sender == owner, "Only the owner can withdraw.");
+
         for (uint i = 0; i < funders.length; i++) {
             address funder = funders[i];
             addressToAmountFunded[funder] = 0;
@@ -40,12 +47,12 @@ contract FundMe {
          * call - (forward all gas or set gas, returns bool)
          */
 
-        // msg.sender is of type address while payable(msg.sender) is of type payable address
-        payable(msg.sender).transfer(address(this).balance);
+        // // msg.sender is of type address while payable(msg.sender) is of type payable address
+        // payable(msg.sender).transfer(address(this).balance);
 
-        // unless you require the success, it does not revert unlike transfer.
-        bool success = payable(msg.sender).send(address(this).balance);
-        require(success, "Could not send funds");
+        // // unless you require the success, it does not revert unlike transfer.
+        // bool success = payable(msg.sender).send(address(this).balance);
+        // require(success, "Could not send funds");
 
         // can be used to call any function in all of ethereum without even needing an ABI
 
