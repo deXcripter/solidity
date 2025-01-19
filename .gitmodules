@@ -16,3 +16,6 @@
 [submodule "fund-me/lib/chainlink-brownie-contracts"]
 	path = fund-me/lib/chainlink-brownie-contracts
 	url = https://github.com/smartcontractkit/chainlink-brownie-contracts
+[submodule "foundry-frist-flight/lib/forge-std"]
+	path = foundry-frist-flight/lib/forge-std
+	url = https://github.com/foundry-rs/forge-std
