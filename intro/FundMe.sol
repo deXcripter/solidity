@@ -5,14 +5,22 @@ import {PriceConverter} from "./PriceConverter.sol";
 pragma solidity ^0.8.18;
 
 contract FundMe {
+    // 973321 gas on v1
+    // 950666 gas after using constant for MINUSD
+    // 923997 gas after using immutable for iOwner
+    // 814580 gas after using custom errors
+
+    uint public constant MINIMUM_USD = 5 * 1e18;
+    error Unauthorized();
+    error NotEnoughEth();
+
     using PriceConverter for uint256;
-    address public owner;
+    address public immutable i_owner;
 
     constructor() {
-        owner = msg.sender;
+        i_owner = msg.sender;
     }
 
-    uint public minimumUsd = 5 * 1e18;
     address[] public funders;
     mapping(address funder => uint256 amountFunded)
         public addressToAmountFunded;
@@ -21,10 +29,10 @@ contract FundMe {
         // Allow uss to send $
         // Have a minimum $ sent $5
         // msg.value.getConversionRate(); // msg.value is of type uint256d
-        require(
-            msg.value.getConversionRate() >= minimumUsd,
-            "You dont have enough ETH"
-        );
+        // require(msg.value.getConversionRate() >= MINIMUM_USD, "You dont have enough ETH");
+        if (msg.value.getConversionRate() < MINIMUM_USD) {
+            revert NotEnoughEth();
+        }
         funders.push(msg.sender);
         addressToAmountFunded[msg.sender] += msg.value;
     }
@@ -56,11 +64,15 @@ contract FundMe {
 
         (bool callSuccess, bytes memory dataReturned) = payable(msg.sender)
             .call{value: address(this).balance}("");
-        require(callSuccess, "Could not send funds to the contract.");
+        if (!callSuccess) {
+            revert NotEnoughEth();
+        }
     }
 
     modifier onlyOwner() {
-        require(msg.sender == owner, "Only the owner can call this function.");
+        if (msg.sender != i_owner) {
+            revert Unauthorized();
+        }
         _;
     }
 }
