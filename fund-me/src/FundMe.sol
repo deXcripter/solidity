@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MIT
 
+import {AggregatorV3Interface} from "@chainlink/contracts/src/v0.8/shared/interfaces/AggregatorV3Interface.sol";
 import {PriceConverter} from "./PriceConverter.sol";
 
 pragma solidity ^0.8.18;
@@ -16,9 +17,11 @@ contract FundMe {
 
     using PriceConverter for uint256;
     address public immutable i_owner;
+    AggregatorV3Interface private s_priceFeed;
 
-    constructor() {
+    constructor(address priceFeed) {
         i_owner = msg.sender;
+        s_priceFeed = AggregatorV3Interface(priceFeed);
     }
 
     address[] public funders;
@@ -30,7 +33,7 @@ contract FundMe {
         // Have a minimum $ sent $5
         // msg.value.getConversionRate(); // msg.value is of type uint256d
         // require(msg.value.getConversionRate() >= MINIMUM_USD, "You dont have enough ETH");
-        if (msg.value.getConversionRate() < MINIMUM_USD) {
+        if (msg.value.getConversionRate(s_priceFeed) < MINIMUM_USD) {
             revert NotEnoughEth();
         }
         funders.push(msg.sender);
@@ -75,5 +78,9 @@ contract FundMe {
             revert Unauthorized();
         }
         _;
+    }
+
+    function getVersion() public view returns (uint256) {
+        return s_priceFeed.version();
     }
 }
