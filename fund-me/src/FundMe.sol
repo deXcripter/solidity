@@ -16,7 +16,7 @@ contract FundMe {
     error NotEnoughEth();
 
     using PriceConverter for uint256;
-    address public immutable i_owner;
+    address private immutable i_owner;
     AggregatorV3Interface private s_priceFeed;
 
     constructor(address priceFeed) {
@@ -78,6 +78,10 @@ contract FundMe {
             revert Unauthorized();
         }
         _;
+    }
+
+    function getOwner() external view returns (address) {
+        return i_owner;
     }
 
     function getVersion() public view returns (uint256) {
