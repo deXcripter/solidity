@@ -1,19 +1,30 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.19;
 
+import {VRFConsumerBaseV2Plus} from "@chainlink/contracts/src/v0.8/vrf/dev/VRFConsumerBaseV2Plus.sol";
+import {VRFV2PlusClient} from "@chainlink/contracts/src/v0.8/vrf/dev/libraries/VRFV2PlusClient.sol";
+
 /**
  * @title Raffle
  * @author deXcripter
  * @notice
  * @dev
  */
-contract Raffle {
+contract Raffle is VRFConsumerBaseV2Plus {
     error Raffle__NotEnoughEthSent();
 
     uint256 private immutable i_EntranceFee;
     uint256 private immutable i_interval; // duration of the lottery in seconds
     address payable[] private s_players;
     uint256 private s_lastTimeStamp;
+
+    uint256 s_subscriptionId;
+    address vrfCoordinator = 0x9DdfaCa8183c41ad55329BdeeD9F6A8d53168B1B;
+    bytes32 s_keyHash =
+        0x787d74caea10b2b357790d5b5247c2f63d1d91572a9846f780606e4d953677ae;
+    uint32 callbackGasLimit = 40000;
+    uint16 requestConfirmations = 3;
+    uint32 numWords = 1;
 
     /* Events */
     event Raffle__PlayerEntered(address indexed player);
@@ -40,7 +51,20 @@ contract Raffle {
             revert();
         }
         // Get our random number from Chainlink VRF
-    }ref
+        requestId = s_vrfCoordinator.requestRandomWords(
+            VRFV2PlusClient.RandomWordsRequest({
+                keyHash: s_keyHash,
+                subId: s_subscriptionId,
+                requestConfirmations: requestConfirmations,
+                callbackGasLimit: callbackGasLimit,
+                numWords: numWords,
+                // Set nativePayment to true to pay for VRF requests with Sepolia ETH instead of LINK
+                extraArgs: VRFV2PlusClient._argsToBytes(
+                    VRFV2PlusClient.ExtraArgsV1({nativePayment: true})
+                )
+            })
+        );
+    }
 
     /**
      * GETTERS
