@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.19;
 
-import {VRFConsumerBaseV2Plus} from "@chainlink/contracts/src/v0.8/vrf/dev/VRFConsumerBaseV2Plus.sol";
-import {VRFV2PlusClient} from "@chainlink/contracts/src/v0.8/vrf/dev/libraries/VRFV2PlusClient.sol";
+import {VRFConsumerBaseV2Plus} from "../lib/chainlink-brownie-contracts/contracts/src/v0.8/vrf/dev/VRFConsumerBaseV2Plus.sol";
+import {VRFV2PlusClient} from "../lib/chainlink-brownie-contracts/contracts/src/v0.8/vrf/dev/libraries/VRFV2PlusClient.sol";
 
 /**
  * @title Raffle
@@ -18,21 +18,27 @@ contract Raffle is VRFConsumerBaseV2Plus {
     address payable[] private s_players;
     uint256 private s_lastTimeStamp;
 
-    uint256 s_subscriptionId;
-    address vrfCoordinator = 0x9DdfaCa8183c41ad55329BdeeD9F6A8d53168B1B;
+    uint256 private immutable i_subscriptionId;
+    address vrfCoordinator = 0x9DdfaCa8183c41ad55329BdeeD9F6A8d53168B1B; // the contract we interact with to get the random number (sepolia only)
     bytes32 s_keyHash =
         0x787d74caea10b2b357790d5b5247c2f63d1d91572a9846f780606e4d953677ae;
-    uint32 callbackGasLimit = 40000;
-    uint16 requestConfirmations = 3;
-    uint32 numWords = 1;
+    uint32 private constant callbackGasLimit = 40000;
+    uint16 private constant requestConfirmations = 3;
+    uint32 private constant numWords = 1;
 
     /* Events */
     event Raffle__PlayerEntered(address indexed player);
 
-    constructor(uint256 entranceFee, uint256 interval) {
+    constructor(
+        uint256 entranceFee,
+        uint256 interval,
+        uint256 _subscriptionId
+    ) VRFConsumerBaseV2Plus(vrfCoordinator) {
         i_EntranceFee = entranceFee;
         i_interval = interval;
-        s_lastTim eStamp = block.timestamp;
+        uint256 eStamp = block.timestamp;
+        s_lastTimeStamp = eStamp;
+        i_subscriptionId = _subscriptionId;
     }
 
     function enterRaffle() external payable {
@@ -51,7 +57,7 @@ contract Raffle is VRFConsumerBaseV2Plus {
             revert();
         }
         // Get our random number from Chainlink VRF
-        requestId = s_vrfCoordinator.requestRandomWords(
+        uint256 requestId = s_vrfCoordinator.requestRandomWords(
             VRFV2PlusClient.RandomWordsRequest({
                 keyHash: s_keyHash,
                 subId: s_subscriptionId,
@@ -65,6 +71,11 @@ contract Raffle is VRFConsumerBaseV2Plus {
             })
         );
     }
+
+    function fulfillRandomWords(
+        uint256 requestId,
+        uint256[] calldata randomWords
+    ) internal virtual override {}
 
     /**
      * GETTERS
