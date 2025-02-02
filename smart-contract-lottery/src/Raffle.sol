@@ -56,8 +56,31 @@ contract Raffle is VRFConsumerBaseV2Plus {
         s_raffleState = RaffleState.OPEN;
     }
 
+    /**
+     * @dev this is the functon that the chainlink nodes will call to see if the lottery is ready to have a  winner.
+     *      the following should be true in order for upkeepNeeded to be true:
+     *      1. The time interval has passed between raffle draws.
+     *      2. The lottery is open.
+     *      3. The contract has ETH
+     *      4. Implicitly, your subscrpition has LINK
+     * @param - ignored
+     * @return upkeepNeeded -
+     * @return
+     */
+    function checkUpkeep(
+        bytes memory /* checkData */
+    ) public view returns (bool upkeepNeeded, bytes memory /* performData */) {
+        bool timeHasPassed = ((block.timestamp - s_lastTimeStamp) < i_interval);
+        bool isOpen = s_raffleState == RaffleState.OPEN;
+        bool hasBanance = address(this).balance > 0;
+        bool hasPlayers = s_players.length > 0;
+
+        upkeepNeeded = timeHasPassed && isOpen && hasBanance && hasPlayers;
+
+        return (upkeepNeeded, (""));
+    }
+
     function enterRaffle() external payable {
-        // require(msg.value >= i_EntranceFee, "Not enough ETH sent");
         if (msg.value < i_EntranceFee) revert Raffle__NotEnoughEthSent();
         if (s_raffleState != RaffleState.OPEN) revert Raffle__NotOpen();
         s_players.push(payable(msg.sender));
@@ -68,13 +91,15 @@ contract Raffle is VRFConsumerBaseV2Plus {
      * @notice Selects a winner from the players list
      * @dev This function gets a random numner to select a winner
      */
-    function selectWinner() external {
-        if ((block.timestamp - s_lastTimeStamp) < i_interval) {
-            revert();
-        }
+    function performUpkeep(bytes calldata /* performData */) external {
+        // if ((block.timestamp - s_lastTimeStamp) < i_interval) {
+        //     revert();
+        // }
+        (bool upkeepNeeded, ) = checkUpkeep("");
+        if (!upkeepNeeded) revert();
+
         s_raffleState = RaffleState.CALCULATING_WINNER;
 
-        // Get our random number from Chainlink VRF
         uint256 requestId = s_vrfCoordinator.requestRandomWords(
             VRFV2PlusClient.RandomWordsRequest({
                 keyHash: s_keyHash,
@@ -100,6 +125,7 @@ contract Raffle is VRFConsumerBaseV2Plus {
         s_raffleState = RaffleState.OPEN;
         s_players = new address payable[](0);
         s_lastTimeStamp = block.timestamp;
+
         (bool success, ) = recentWinner.call{value: address(this).balance}("");
         if (!success) {
             revert Raffle__TransferFail();
@@ -109,7 +135,7 @@ contract Raffle is VRFConsumerBaseV2Plus {
     }
 
     /**
-     * GETTERS
+     * ////////////    GETTERS      //////////////////
      */
     function getEntranceFee() public view returns (uint256) {
         return i_EntranceFee;
