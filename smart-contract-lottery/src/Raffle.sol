@@ -12,7 +12,16 @@ import {VRFV2PlusClient} from "../lib/chainlink-brownie-contracts/contracts/src/
  */
 contract Raffle is VRFConsumerBaseV2Plus {
     error Raffle__NotEnoughEthSent();
+    error Raffle__TransferFail();
+    error Raffle__NotOpen();
 
+    // Type Declarations
+    enum RaffleState {
+        OPEN, // 0
+        CALCULATING_WINNER // 1
+    }
+
+    // Variables
     uint256 private immutable i_EntranceFee;
     uint256 private immutable i_interval; // duration of the lottery in seconds
     address payable[] private s_players;
@@ -26,8 +35,12 @@ contract Raffle is VRFConsumerBaseV2Plus {
     uint16 private constant requestConfirmations = 3;
     uint32 private constant numWords = 1;
 
+    address private s_recentWinner;
+    RaffleState private s_raffleState;
+
     /* Events */
     event Raffle__PlayerEntered(address indexed player);
+    event WinnerPicked(address indexed winner);
 
     constructor(
         uint256 entranceFee,
@@ -37,13 +50,16 @@ contract Raffle is VRFConsumerBaseV2Plus {
         i_EntranceFee = entranceFee;
         i_interval = interval;
         uint256 eStamp = block.timestamp;
-        s_lastTimeStamp = eStamp;
         i_subscriptionId = _subscriptionId;
+
+        s_lastTimeStamp = eStamp;
+        s_raffleState = RaffleState.OPEN;
     }
 
     function enterRaffle() external payable {
         // require(msg.value >= i_EntranceFee, "Not enough ETH sent");
         if (msg.value < i_EntranceFee) revert Raffle__NotEnoughEthSent();
+        if (s_raffleState != RaffleState.OPEN) revert Raffle__NotOpen();
         s_players.push(payable(msg.sender));
         emit Raffle__PlayerEntered(msg.sender);
     }
@@ -56,11 +72,13 @@ contract Raffle is VRFConsumerBaseV2Plus {
         if ((block.timestamp - s_lastTimeStamp) < i_interval) {
             revert();
         }
+        s_raffleState = RaffleState.CALCULATING_WINNER;
+
         // Get our random number from Chainlink VRF
         uint256 requestId = s_vrfCoordinator.requestRandomWords(
             VRFV2PlusClient.RandomWordsRequest({
                 keyHash: s_keyHash,
-                subId: s_subscriptionId,
+                subId: i_subscriptionId,
                 requestConfirmations: requestConfirmations,
                 callbackGasLimit: callbackGasLimit,
                 numWords: numWords,
@@ -75,7 +93,20 @@ contract Raffle is VRFConsumerBaseV2Plus {
     function fulfillRandomWords(
         uint256 requestId,
         uint256[] calldata randomWords
-    ) internal virtual override {}
+    ) internal virtual override {
+        uint256 indexOfWinner = randomWords[0] % s_players.length;
+        address payable recentWinner = s_players[indexOfWinner];
+        s_recentWinner = recentWinner;
+        s_raffleState = RaffleState.OPEN;
+        s_players = new address payable[](0);
+        s_lastTimeStamp = block.timestamp;
+        (bool success, ) = recentWinner.call{value: address(this).balance}("");
+        if (!success) {
+            revert Raffle__TransferFail();
+        }
+
+        emit WinnerPicked(s_recentWinner);
+    }
 
     /**
      * GETTERS
