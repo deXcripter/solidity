@@ -22,13 +22,14 @@ contract Raffle is VRFConsumerBaseV2Plus {
     }
 
     // Variables
-    uint256 private immutable i_EntranceFee;
+    uint256 private immutable i_entranceFee;
     uint256 private immutable i_interval; // duration of the lottery in seconds
     address payable[] private s_players;
     uint256 private s_lastTimeStamp;
 
     uint256 private immutable i_subscriptionId;
-    address vrfCoordinator = 0x9DdfaCa8183c41ad55329BdeeD9F6A8d53168B1B; // the contract we interact with to get the random number (sepolia only)
+    address immutable i_vrfCoordinator; // the contract we interact with to get the random number (sepolia only)
+    // address vrfCoordinator = 0x9DdfaCa8183c41ad55329BdeeD9F6A8d53168B1B; // the contract we interact with to get the random number (sepolia only)
     bytes32 s_keyHash =
         0x787d74caea10b2b357790d5b5247c2f63d1d91572a9846f780606e4d953677ae;
     uint32 private constant callbackGasLimit = 40000;
@@ -45,9 +46,11 @@ contract Raffle is VRFConsumerBaseV2Plus {
     constructor(
         uint256 entranceFee,
         uint256 interval,
-        uint256 _subscriptionId
-    ) VRFConsumerBaseV2Plus(vrfCoordinator) {
-        i_EntranceFee = entranceFee;
+        uint256 _subscriptionId,
+        address _vrfCoordinator
+    ) VRFConsumerBaseV2Plus(_vrfCoordinator) {
+        i_vrfCoordinator = _vrfCoordinator;
+        i_entranceFee = entranceFee;
         i_interval = interval;
         uint256 eStamp = block.timestamp;
         i_subscriptionId = _subscriptionId;
@@ -81,7 +84,7 @@ contract Raffle is VRFConsumerBaseV2Plus {
     }
 
     function enterRaffle() external payable {
-        if (msg.value < i_EntranceFee) revert Raffle__NotEnoughEthSent();
+        if (msg.value < i_entranceFee) revert Raffle__NotEnoughEthSent();
         if (s_raffleState != RaffleState.OPEN) revert Raffle__NotOpen();
         s_players.push(payable(msg.sender));
         emit Raffle__PlayerEntered(msg.sender);
@@ -138,6 +141,6 @@ contract Raffle is VRFConsumerBaseV2Plus {
      * ////////////    GETTERS      //////////////////
      */
     function getEntranceFee() public view returns (uint256) {
-        return i_EntranceFee;
+        return i_entranceFee;
     }
 }
