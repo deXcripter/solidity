@@ -10,8 +10,8 @@ contract HelperConfig is Script {
     struct NetworkConfig {
         uint256 entranceFee;
         uint256 interval;
-        uint256 _subscriptionId;
-        address i_vrfCoordinator;
+        uint256 subscriptionId;
+        address vrfCoordinator;
     }
 
     NetworkConfig public localNetworkConfig;
@@ -22,8 +22,12 @@ contract HelperConfig is Script {
         networkConfigs[11155111] = getSepoliaEthConfig();
     }
 
+    function getConfig() public returns(NetworkConfig memory) {
+        return getConfigByChainId(block.chainid);
+    }
+
     function getConfigByChainId(uint256 chainId) public returns(NetworkConfig memory) {
-        if (networkConfigs[chainId].i_vrfCoordinator != address(0)) return networkConfigs[chainId];
+        if (networkConfigs[chainId].vrfCoordinator != address(0)) return networkConfigs[chainId];
         else if (chainId == 31337) {
             return getOrCreateAnvilEthConfig();
         } else revert();
@@ -34,7 +38,7 @@ contract HelperConfig is Script {
         uint32 MOCK_GAS_PRICE_LINK = 1e9;
         int256 MOCK_WEI_PER_UNIT_LINK = 4e15;
 
-        if (localNetworkConfig.i_vrfCoordinator != address(0)) {
+        if (localNetworkConfig.vrfCoordinator != address(0)) {
             return localNetworkConfig;
         }
 
